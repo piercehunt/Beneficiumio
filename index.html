@@ -39,10 +39,17 @@
 				matrix1.init();
 				tilt1.text = '*';
 
-				var osc = new Tone.Oscillator({
-					"frequency" : 440,
-					"volume" : -30
-				}).toMaster();
+				// // var osc = new Tone.Oscillator({
+				// 	"frequency" : 440,
+				// 	"volume" : -30
+				// }).toMaster();
+				
+				//a polysynth composed of 6 Voices of Synth
+				var synth = new Tone.PolySynth(6, Tone.Synth).toMaster();
+				//set the attributes using the set interface
+				synth.set("detune", -1200);
+				//play a chord
+				synth.triggerAttackRelease(["C4", "E4", "A4"], "4n");
 
 				onoff.on('*', function(data) {
 					if(onoff.val) {
@@ -61,7 +68,7 @@
 								context.resume()
 							}
 						}
-						osc.start();
+						// synth.start();
 						Tone.Master.volume.rampTo(0, 0.05);
 					}
 					else {
@@ -71,12 +78,16 @@
 				});
 
 				tilt1.on('*', function(data){
-					let freq = Math.min(Math.max((data.x + 1) * 1000, 60), 2000)
-					let vol = Math.min(Math.max((((data.y + 1) * 1000) / 50) * -1, -40), 0)
-					osc.set('frequency', freq);
-					osc.set('volume', vol);
-					// $('div#output').text(freq + "x" + data.x);
+					let detune = Math.min(Math.max(((data.x) * 1000)  * 7, -2000), 2000)
+					// let vol = Math.min(Math.max((((data.y + 1) * 1000) / 50) * -1, -40), 0)
+					// osc.set('frequency', freq);
+					// osc.set('volume', vol);
+					$('div#output').text(detune + "x" + data.x);
 					// $('div#output').text(vol + "y" + data.y);
+
+					synth.set("detune", detune);
+					//play a chord
+					synth.triggerAttackRelease(["C4", "E4", "A4"], "4n");					
 				})
 
 				// matrix1.on('*', function(data) {
