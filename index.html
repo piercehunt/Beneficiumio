@@ -16,12 +16,12 @@
 
 <body>
 	<div id="content">
-		<div><span  id="title">WebAudio-Proj1</span><span id="dials" style="float:right">Power:<canvas id="onoff" nx="toggle"></canvas></span></div>
+		<div><span  id="title">Beneficium.io</span><span id="dials" style="float:right">Power:<canvas id="onoff" nx="toggle"></canvas></span></div>
 		<div id="pads">
-			<canvas id="matrix1" nx="matrix" style="width:100%;height:65%"></canvas>
+			<canvas id="matrix1" nx="matrix" style="width:100%;height:60%"></canvas>
 		</div>
 		<div id="controls">
-			<canvas id="tilt1" nx="tilt" style="width:100%;height:65%"></canvas>
+			<canvas id="tilt1" nx="tilt" style="width:100%;height:60%"></canvas>
 		</div>
 		<div id="output" style="width:100%;height:1em;display:none"></div>
 		<div id="signature">Created by Pierce Hunt</div>
@@ -31,9 +31,9 @@
 
 		nx.onload = function () {
 
-			nx.colorize("#00CCFF")
-			nx.colorize("border", "#ffffff")
-			nx.colorize("fill", "#333333")
+			nx.colorize("#07DDFF")
+			nx.colorize("border", "#FFD817")
+			nx.colorize("fill", "#FFD817")
 			matrix1.row = 3;
 			matrix1.col = 4;
 			matrix1.init();
@@ -41,7 +41,7 @@
 
 			Tone.Master.volume.rampTo(0, 0.05);
 
-			let notes 			= ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4"];
+			let notes 			= ["A0", "E0", "B1", "F#1", "D2", "A2", "E3", "B3", "F4", "C4", "G5", "D5", "A6", "E6"];
 			let bassNotes 		= ["C2", "C3", "D2", "E2", "D2", "A1"];
 			let sawtoothSynth 	= { oscillator: { type: "sawtooth3" }, envelope: { attack: .01, decay: .3, sustain: .2, release: 1.5 } };
 			let squareSynth 	= { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } };
