@@ -9,35 +9,48 @@
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/0.10.0/Tone.min.js"></script>
-	<script src="./scripts/nexusUI.min.js"></script>
+	<script src="./scripts/NexusUI.min.v2.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="./style/main.css">
 </head>
 
 <body>
 	<div id="content">
-		<div><span  id="title">Beneficium.io</span><span id="dials" style="float:right">Power:<canvas id="onoff" nx="toggle"></canvas></span></div>
+		<div>
+			<span  id="title">Beneficium.io</span>
+		</div>		
 		<div id="pads">
-			<canvas id="matrix1" nx="matrix" style="width:100%;height:60%"></canvas>
+			<div id="matrix1" nx="matrix" x-style="width:100%;height:60%"></div>
 		</div>
 		<div id="controls">
-			<canvas id="tilt1" nx="tilt" style="width:100%;height:60%"></canvas>
+			<div id="tilt1" nx="tilt" x-style="width:100%;height:60%"></div>
 		</div>
 		<div id="output" style="width:100%;height:1em;display:none"></div>
-		<div id="signature">Created by Pierce Hunt</div>
+		<div id="signature">Created by Pierce Hunt <div id="onoff" nx="toggle"></div></div>	
 	</div>
 	<script>
-		$("body").addClass("Mobile");
 
-		nx.onload = function () {
+		$(function() {
+			$("body").addClass("Mobile");			
+			Nexus.colors.accent = "#07DDFF"
+			Nexus.colors.fill = "#FFD817"
+			// nx.colorize("#07DDFF")
+			// nx.colorize("border", "#FFD817")
+			// nx.colorize("fill", "#FFD817")
+			
+			var onoff = new Nexus.Toggle("#onoff");
 
-			nx.colorize("#07DDFF")
-			nx.colorize("border", "#FFD817")
-			nx.colorize("fill", "#FFD817")
-			matrix1.row = 3;
-			matrix1.col = 4;
-			matrix1.init();
-			tilt1.text = '*';
+			var matrix1 = new Nexus.Sequencer("#matrix1", {
+				// 'size': [400,200], // ??
+				'mode': 'toggle',  // 	??
+				'rows': 3,
+				'columns': 4});
+			// matrix1.row = 3;
+			// matrix1.col = 4;
+			// matrix1.init();
+
+			var tilt1 = new Nexus.Tilt("#tilt1");
+			// tilt1.text = '*';
 
 			Tone.Master.volume.rampTo(0, 0.05);
 
@@ -88,7 +101,7 @@
 				}
 			})
 
-			onoff.on('*', function (data) {
+			onoff.on('change', function (data) {
 				if (onoff.val) {
 					initializeAudio();
 					Tone
@@ -100,7 +113,7 @@
 				}
 			});
 			var thirteenth = 153.846153846153846
-			tilt1.on('*', function (data) {
+			tilt1.on('change', function (data) {
 				let xx = Math.min(Math.max((((data.x + 1) * 1000)) / thirteenth, 0), 13)
 				let yy = Math.min(Math.max((((data.y + 1) * 1000)) / thirteenth, 0), 13)
 				let note = ((xx + yy) / 2).toFixed(0)
@@ -109,10 +122,10 @@
 				s1.attack();
 			})
 
-			matrix1.on('*', function (data) {
+			matrix1.on('change', function (data) {
 				$('div#output').text(JSON.stringify(data));
 			})
-		}
+		});
 
 		function initializeAudio() {
 			if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
