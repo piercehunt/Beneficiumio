@@ -18,10 +18,10 @@
 	<div id="content">
 		<div><span  id="title">Beneficium.io</span><span id="dials" style="float:right">Power:<canvas id="onoff" nx="toggle"></canvas></span></div>
 		<div id="pads">
-			<canvas id="matrix1" nx="matrix" style="width:100%;height:60%"></canvas>
+			<canvas id="matrix1" nx="matrix" style="width:100%;height:3em"></canvas>
 		</div>
 		<div id="controls">
-			<canvas id="tilt1" nx="tilt" style="width:100%;height:60%"></canvas>
+			<canvas id="tilt1" nx="tilt" style="width:100%;height:50%"></canvas>
 		</div>
 		<div id="output" style="width:100%;height:1em;display:none"></div>
 		<div id="signature">Created by Pierce Hunt</div>
@@ -34,9 +34,6 @@
 			nx.colorize("#07DDFF")
 			nx.colorize("border", "#FFD817")
 			nx.colorize("fill", "#FFD817")
-			matrix1.row = 3;
-			matrix1.col = 4;
-			matrix1.init();
 			tilt1.text = '*';
 
 			Tone.Master.volume.rampTo(0, 0.05);
@@ -44,10 +41,10 @@
 			let notes 			= ["A0", "E0", "B1", "F#1", "D2", "A2", "E3", "B3", "F4", "C4", "G5", "D5", "A6", "E6"];
 			let bassNotes 		= ["C2", "C3", "D2", "E2", "D2", "A1"];
 			let sawtoothSynth 	= { oscillator: { type: "sawtooth3" }, envelope: { attack: .01, decay: .3, sustain: .2, release: 1.5 } };
-			let squareSynth 	= { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } };
-			let pianoPolySynth 	= { "volume": -8, "oscillator": { "partials": [1, 2, 1], }, "portamento": 0.05 };
-			let bassMonoSynth 	= { volume: -10, envelope: { attack: 0.1, decay: 0.3, release: 2, }, filterEnvelope: { attack: 0.001, decay: 0.01, sustain: 0.5, baseFrequency: 200, octaves: 2.6 } };
-			let snareNoiseSynth = { volume: -5, envelope: { attack: 0.001, decay: 0.2, sustain: 0 }, filterEnvelope: { attack: 0.001, decay: 0.1, sustain: 0 } };
+			// let squareSynth 	= { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } };
+			// let pianoPolySynth 	= { "volume": -8, "oscillator": { "partials": [1, 2, 1], }, "portamento": 0.05 };
+			// let bassMonoSynth 	= { volume: -10, envelope: { attack: 0.1, decay: 0.3, release: 2, }, filterEnvelope: { attack: 0.001, decay: 0.01, sustain: 0.5, baseFrequency: 200, octaves: 2.6 } };
+			// let snareNoiseSynth = { volume: -5, envelope: { attack: 0.001, decay: 0.2, sustain: 0 }, filterEnvelope: { attack: 0.001, decay: 0.1, sustain: 0 } };
 
 			var chorus 			= new Tone.Chorus(4, 2.5, 0.5).receive("chorus").toMaster();
 			var wah 			= new Tone.AutoWah(50, 6, -30).toMaster();
@@ -61,15 +58,43 @@
 			var pingPong 		= new Tone.PingPongDelay("4n", 0.2).toMaster();
 			var tremolo 		= new Tone.Tremolo().toMaster().start();
 			var vibrato 		= new Tone.Vibrato().toMaster();
-			var effects 		= [ [chorus, wah, crusher, autoFilter],
-									[cheby, feedbackDelay, freeverb, reverb],
-									[phaser, pingPong, tremolo, vibrato]]
-
+			// var effects 		= [ [chorus, wah, crusher, autoFilter],
+			// 						[cheby, feedbackDelay, freeverb, reverb],
+			// 						[phaser, pingPong, tremolo, vibrato]];
+			var effects 		= [[pingPong, feedbackDelay, freeverb, reverb]];
 			let s1 = createSynth(notes, sawtoothSynth);
 			// let s1 = createSynth(notes, squareSynth);
 			// let s1 = createNoiseSynth(notes, snareNoiseSynth);
 			// let s1 = createMonoSynth(bassNotes, bassMonoSynth);
 			// let s1 = createPolySynth(notes, pianoPolySynth);
+
+			var cancellation = 0;
+
+			onoff.on('*', function (data) {
+				if (onoff.val.value == 1) {
+					initializeAudio();
+					Tone.Master.volume.rampTo(0, 0.05);
+					clearInterval(cancellation);
+
+					cancellation = setInterval(function(){
+						try {
+							s1.attack();
+						} catch {
+							// ignore
+						}
+					}, 400);					
+				}
+				else {
+					s1.release();
+					s1.volume.rampTo(0, 0.05);
+					clearInterval(cancellation);
+				}
+			});
+
+
+			matrix1.row = effects.length;
+			matrix1.col = effects[0].length;
+			matrix1.init();
 
 			matrix1.on('*', function(data) {
 				if ( data.level == 1) {
@@ -88,17 +113,9 @@
 				}
 			})
 
-			onoff.on('*', function (data) {
-				if (onoff.val) {
-					initializeAudio();
-					Tone
-					Tone.Master.volume.rampTo(0, 0.05);
-				}
-				else {
-					s1.release();
-					s1.volume.rampTo(0, 0.05);
-				}
-			});
+
+
+
 			var thirteenth = 153.846153846153846
 			tilt1.on('*', function (data) {
 				let xx = Math.min(Math.max((((data.x + 1) * 1000)) / thirteenth, 0), 13)
@@ -106,7 +123,8 @@
 				let note = ((xx + yy) / 2).toFixed(0)
 				// $('div#output').text("note=" + note);
 				s1.setCurrentTone(note);
-				s1.attack();
+				// s1.attack();
+				s1.release();
 			})
 
 			matrix1.on('*', function (data) {
@@ -136,8 +154,8 @@
 			synth.notes = notes,
 				synth.currentTone = synth.notes[0],
 				synth.setCurrentTone = function (t) {
-					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t],
-						synth.triggerAttack(synth.currentTone))
+					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t])
+						// synth.triggerAttack(synth.currentTone))
 				};
 
 			synth.attack = function () {
