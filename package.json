@@ -4,7 +4,8 @@
   "description": "relaying user sounds so that they can collaborate and listen",
   "private": true,
   "scripts": {
-    "start": "node app"
+    "start": "node app",
+    "zip": "zip ~/Downloads/benficium.zip -r *.[^.]* -x node_modules -x npm-debug.log -x .git"
   },
   "author": "Pierce Hunt",
   "license": "ISC",
