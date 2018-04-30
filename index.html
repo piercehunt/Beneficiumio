@@ -93,7 +93,7 @@
 			matrix1.on('*', function(data) {
 				if ( data.level == 1) {
 					me.dispose();
-					$('div#output').text(JSON.stringify(data));
+					// $('div#output').text(JSON.stringify(data));
 					let instrument = instruments[data.row][data.col];
 					currentInstrument.row = data.row;
 					currentInstrument.col = data.col;
@@ -125,8 +125,6 @@
 					clearInterval(cancellation);
 					socket.emit('hi', { });
 					cancellation = setInterval(function(){
-						userCount = Object.keys(them).length
-						$("#users").text(userCount);
 						try { 
 							let time = Tone.now() + 0.1;
 							me.attack(time);
@@ -170,13 +168,13 @@
 				let yy = Math.min(Math.max((((data.y + 1) * 1000)) / thirteenth, 0), 10);
 				// let note = ((xx + yy) / 2).toFixed(0);
 				let note = yy.toFixed(0);
-				$('div#output').text("note=" + note);
+				// $('div#output').text("note=" + note);
 				me.setCurrentTone(note);
 				socket.emit('change', { me: myuser, room: myroom, note: note, instrument: currentInstrument });
 			})
 
 			matrix1.on('*', function (data) {
-				$('div#output').text(JSON.stringify(data));
+				// $('div#output').text(JSON.stringify(data));
 			})
 
 			socket.on('sup', function(data) {
@@ -212,8 +210,8 @@
 				if(!them[data.user]) return;
 				if(!them[data.user].synth) return;
 				let s = them[data.user].synth;
+				try{ s.release();} catch{}
 				delete them[data.user];
-				s.release();
 			});
 
 			// socket.emit('change', { me: myuser, room: myroom, note: 0, instrument: currentInstrument });
@@ -242,7 +240,33 @@
 					if(u.synth) { u.synth.release()};
 					u.synth = createSynth(notes, instrument.synth).connect(instrument.fx);
 				}
-			});				
+			});		
+			
+			socket.on('user-connected', function(data) {
+				userCount = data.userCount;
+
+				if(data.user == myuser) return;
+				console.log('user-connected: ' + data.user);				
+			});
+
+			socket.on('user-disconnected', function(data) {
+				userCount = data.userCount;
+
+				if(data.user == myuser) return;
+				console.log('user-disconnected: ' + data.user);
+
+				// find user 
+				// destroy synth for user
+				if(!them[data.user]) return;
+				if(!them[data.user].synth) return;
+				let s = them[data.user].synth;
+				delete them[data.user];
+				try{ s.release();} catch{}
+			});			
+
+			setInterval(function() {
+				$("#users").text(userCount);
+			}, 1000);
 
 			socket.emit('hi', { });
 		}

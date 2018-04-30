@@ -18,9 +18,14 @@ function logErrors (err, req, res, next) {
   next(err)
 }
 
+var userCount = 0;
+
 io.on('connection', function(socket){
     console.log('a user connected');
     socket.hi = false;
+
+    userCount++;
+    io.emit('user-connected', { user: socket.id, userCount: userCount });
 
     // On startup announce self to server:
     socket.on('hi', function(data) {
@@ -57,11 +62,16 @@ io.on('connection', function(socket){
       // tell everyone user is gone
       io.emit('bye', { user: socket.id});
     });    
+
+    socket.on('disconnect', function() {
+      userCount--;
+      io.emit('user-disconnected', { user: socket.id, userCount: userCount });
+    });
 });
 
-io.on('disconnect', function(socket) {
-  console.log('disconnect: ' + JSON.stringify(socket.id));
-});
+setInterval(function() {
+
+}, 5000);
 
 http.listen(port, function(){
   console.log('listening on *:'+ port);
