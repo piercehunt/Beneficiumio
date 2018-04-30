@@ -30,7 +30,11 @@ html, body {
 	position: relative;
 	overflow-y: hidden;
 	overflow-x: hidden;
-	font-family:Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif
+  font-family: bio-sans, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  touch-action:none;
+  
 }
 
 div#content {
@@ -41,7 +45,7 @@ div#content {
 
 div#dials {
 	margin-top: 20px;
-	color: #07DDFF;
+	color: #45B39D;
 }
 
 div#pads {

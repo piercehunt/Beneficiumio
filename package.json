@@ -1,0 +1,15 @@
+{
+  "name": "soundserver",
+  "version": "1.0.0",
+  "description": "relaying user sounds so that they can collaborate and listen",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2",
+    "socket.io": "^2.1.0"
+  }
+}
