@@ -1,12 +1,12 @@
 {
-  "name": "soundserver",
-  "version": "1.0.0",
+  "name": "beneficium-io",
+  "version": "1.4.0",
   "description": "relaying user sounds so that they can collaborate and listen",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app"
   },
-  "author": "",
+  "author": "Pierce Hunt",
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.2",
