@@ -30,7 +30,7 @@
 		<div id="controls">Users:<span id="users"></span></div>
 	</div>
 	<script>
-		var socket = io();
+		var socket = io(window.location.host);
 		// On startup announce self to server:
 		let myuser = "";
 		let myroom = -1;
