@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "node app",
+    "publish": "eb deploy",
     "zip": "zip ~/Downloads/benficium.zip -r * .[^.]*  -x 'node_modules/*' -x 'npm-debug.log' -x '.git/*'"
   },
   "author": "Pierce Hunt",
