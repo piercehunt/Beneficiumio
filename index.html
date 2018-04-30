@@ -8,77 +8,103 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/0.10.0/Tone.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/0.12.0/Tone.min.js"></script>
 	<script src="./scripts/nexusUI.min.js"></script>
-
+	<!-- <script src="./scripts/socket.io.js"></script> -->
+	<script src="/socket.io/socket.io.js"></script>
+	<link rel="stylesheet" href="https://use.typekit.net/mcz6yxz.css">
 	<link rel="stylesheet" type="text/css" href="./style/main.css">
 </head>
 
 <body>
-	<div id="content">
-		<div><span  id="title">Beneficium.io</span><span id="dials" style="float:right">Power:<canvas id="onoff" nx="toggle"></canvas></span></div>
+	<div id="content" style="z-index: 1;">
+		<div><span  id="title">Beneficium</span><span id="controls" style="float:right">Power:<canvas id="onoff" nx="toggle"></canvas></span></div>
 		<div id="pads">
-			<canvas id="matrix1" nx="matrix" style="width:100%;height:60%"></canvas>
+			<canvas id="matrix1" nx="matrix" style="width:100%;height:50%"></canvas>
 		</div>
 		<div id="controls">
-			<canvas id="tilt1" nx="tilt" style="width:100%;height:60%"></canvas>
+			<canvas id="tilt1" nx="tilt" style="width:100%;height:50%"></canvas>
 		</div>
-		<div id="output" style="width:100%;height:1em;display:none"></div>
-		<div id="signature">Created by Pierce Hunt</div>
+		<div id="output" style="width:100%;height:1em;display:block"></div>
+		<div id="signature">A WebAudio experiment by Pierce Hunt</div>
+		<div id="controls">Users:<span id="users"></span></div>
 	</div>
 	<script>
+		var socket = io();
+		// On startup announce self to server:
+		let myuser = "";
+		let myroom = -1;
+		let them = {};
+		let userCount = 0;
+
 		$("body").addClass("Mobile");
+		$("#users").text(userCount);
+		disableScroll();
 
 		nx.onload = function () {
 
-			nx.colorize("#07DDFF")
-			nx.colorize("border", "#FFD817")
-			nx.colorize("fill", "#FFD817")
-			matrix1.row = 3;
-			matrix1.col = 4;
-			matrix1.init();
+			nx.colorize("#AEB6BF")
+			nx.colorize("border", "#D6EAF8")
+			nx.colorize("fill", "#E6B0AA")
 			tilt1.text = '*';
 
 			Tone.Master.volume.rampTo(0, 0.05);
+			Tone.Transport.latencyHint = 0.5;
 
-			let notes 			= ["A0", "E0", "B1", "F#1", "D2", "A2", "E3", "B3", "F4", "C4", "G5", "D5", "A6", "E6"];
+			let notes 			= ["A0", "E0", "B1", "F#1", "D2", "A2", "E3", "B3", "F4", "C4", "C4", "C4", "C4", "C4"]; //"G5", "D5", "A6", "E6"
 			let bassNotes 		= ["C2", "C3", "D2", "E2", "D2", "A1"];
-			let sawtoothSynth 	= { oscillator: { type: "sawtooth3" }, envelope: { attack: .01, decay: .3, sustain: .2, release: 1.5 } };
-			let squareSynth 	= { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } };
-			let pianoPolySynth 	= { "volume": -8, "oscillator": { "partials": [1, 2, 1], }, "portamento": 0.05 };
-			let bassMonoSynth 	= { volume: -10, envelope: { attack: 0.1, decay: 0.3, release: 2, }, filterEnvelope: { attack: 0.001, decay: 0.01, sustain: 0.5, baseFrequency: 200, octaves: 2.6 } };
-			let snareNoiseSynth = { volume: -5, envelope: { attack: 0.001, decay: 0.2, sustain: 0 }, filterEnvelope: { attack: 0.001, decay: 0.1, sustain: 0 } };
+			let triangleSynth   = { oscillator: { type: "triangle"}};
+			let polySynth		= { "volume": -35, oscillator:{ type:"square" },filter:{Q:3,type:"allpass",rolloff:-24},envelope:{attack:0.3,decay:0,sustain:1,release:0.3},filterEnvelope:{attack:0.2,decay:0,sustain:1,release:0.2, min:20, max:20,exponent:2,	}};
+			// let sawtoothSynth 	= { oscillator: { type: "sawtooth3" }, envelope: { attack: .01, decay: .3, sustain: .2, release: 1.5 } };
+			// let squareSynth 	= { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } };
+			// let pianoPolySynth 	= { "volume": -8, "oscillator": { "partials": [1, 2, 1], }, "portamento": 0.05 };
+			// let bassMonoSynth 	= { volume: -10, envelope: { attack: 0.1, decay: 0.3, release: 2, }, filterEnvelope: { attack: 0.001, decay: 0.01, sustain: 0.5, baseFrequency: 200, octaves: 2.6 } };
+			// let snareNoiseSynth = { volume: -5, envelope: { attack: 0.001, decay: 0.2, sustain: 0 }, filterEnvelope: { attack: 0.001, decay: 0.1, sustain: 0 } };
 
-			var chorus 			= new Tone.Chorus(4, 2.5, 0.5).receive("chorus").toMaster();
-			var wah 			= new Tone.AutoWah(50, 6, -30).toMaster();
-			var crusher 		= new Tone.BitCrusher(4).toMaster();
-			var autoFilter 		= new Tone.AutoFilter("4n").toMaster().start();
-			var cheby 			= new Tone.Chebyshev(50).toMaster();
+			// var chorus 			= new Tone.Chorus(4, 2.5, 0.5).receive("chorus").toMaster();
+			// var wah 				= new Tone.AutoWah(50, 6, -30).toMaster();
+			// var crusher 			= new Tone.BitCrusher(4).toMaster();
+			// var autoFilter 		= new Tone.AutoFilter("4n").toMaster();
+			// var cheby 			= new Tone.Chebyshev(50).toMaster();
 			var feedbackDelay 	= new Tone.FeedbackDelay("8n", 0.5).toMaster();
 			var freeverb 		= new Tone.Freeverb().toMaster();
-			var reverb 			= new Tone.JCReverb().connect(Tone.Master);
-			var phaser 			= new Tone.Phaser({ "frequency": 15, "octaves": 5, "baseFrequency": 1000 }).toMaster();
-			var pingPong 		= new Tone.PingPongDelay("4n", 0.2).toMaster();
-			var tremolo 		= new Tone.Tremolo().toMaster().start();
+			var reverb 			= new Tone.JCReverb().toMaster(); //.connect(Tone.Master);
+			// var phaser 			= new Tone.Phaser({ "frequency": 15, "octaves": 5, "baseFrequency": 1000 }).toMaster();
+			var pingPong 		= new Tone.PingPongDelay("4n", 0.5).toMaster();
+			var tremolo 		= new Tone.Tremolo().toMaster();
 			var vibrato 		= new Tone.Vibrato().toMaster();
-			var effects 		= [ [chorus, wah, crusher, autoFilter],
-									[cheby, feedbackDelay, freeverb, reverb],
-									[phaser, pingPong, tremolo, vibrato]]
 
-			let s1 = createSynth(notes, sawtoothSynth);
-			// let s1 = createSynth(notes, squareSynth);
-			// let s1 = createNoiseSynth(notes, snareNoiseSynth);
-			// let s1 = createMonoSynth(bassNotes, bassMonoSynth);
-			// let s1 = createPolySynth(notes, pianoPolySynth);
+			var instruments 	= [[
+									{ fx: pingPong, 		synth: triangleSynth}, 
+									{ fx: feedbackDelay, 	synth: triangleSynth}, 
+									{ fx: freeverb, 		synth: triangleSynth}, 
+									{ fx: reverb, 			synth: triangleSynth}, 
+									// { fx: vibrato, 			synth: polySynth}, 
+								 ]];
+									 
+			matrix1.row = instruments.length;
+			matrix1.col = instruments[0].length;
+			matrix1.init();
+			
+			let defaultInstrument = instruments[0][0]; // first row, first instrument
+			let me = createSynth(notes, defaultInstrument.synth).connect(defaultInstrument.fx);
+			let currentInstrument = { row: 0, col: 0 };
 
 			matrix1.on('*', function(data) {
 				if ( data.level == 1) {
-					s1.dispose();
+					me.dispose();
 					$('div#output').text(JSON.stringify(data));
-					s1 = createSynth(notes, sawtoothSynth).connect(effects[data.row][data.col]);
+					let instrument = instruments[data.row][data.col];
+					currentInstrument.row = data.row;
+					currentInstrument.col = data.col;
 
-					for(var r = 0; r < 3; r++) {
-						for(var c = 0; c < 4; c++){
+					if(me) { me.release()};
+					me = createSynth(notes, instrument.synth).connect(instrument.fx);
+					socket.emit('change-instrument', { me: myuser, room: myroom, instrument: currentInstrument });
+
+					// clear all other cells & allow only 1 cell to be active at a time.
+					for(var r = 0; r < instruments.length; r++) {
+						for(var c = 0; c < instruments[r].length; c++){
 							if( r == data.row && c == data.col) {
 								continue;
 							}
@@ -86,163 +112,204 @@
 						}
 					}
 				}
-			})
+			});									 
+
+			var cancellation = 0;
 
 			onoff.on('*', function (data) {
-				if (onoff.val) {
-					initializeAudio();
-					Tone
+				if (onoff.val.value == 1) {
+					// initializeAudio();
 					Tone.Master.volume.rampTo(0, 0.05);
+					Tone.Transport.start("+0.1");
+					
+					clearInterval(cancellation);
+					socket.emit('hi', { });
+					cancellation = setInterval(function(){
+						userCount = Object.keys(them).length
+						$("#users").text(userCount);
+						try { 
+							let time = Tone.now() + 0.1;
+							me.attack(time);
+							for(var user in them) {
+								if(user == myuser) return;
+								if(them[user].synth) {
+									// if (them[user].hasOwnProperty(synth)) {
+										them[user].synth.attack(time);
+									// }
+								}
+							}
+						} catch {
+							// ignore
+						}
+					}, 500);					
 				}
 				else {
-					s1.release();
-					s1.volume.rampTo(0, 0.05);
+					try {
+						socket.emit('bye', { user: myuser, room: myroom});
+						clearInterval(cancellation);
+						// me.dispose();
+						me.release();
+						me.volume.rampTo(0, 0.05);		
+						for(var user in them) {
+								if(user == myuser) return;
+								if(them[user].synth) {
+									// them[user].synth.dispose();
+									them[user].synth.release();
+									them[user].synth.volume.rampTo(0, 0.05);		
+								}
+							}				
+					} catch {}
 				}
 			});
-			var thirteenth = 153.846153846153846
+
+			var thirteenth = 153.846153846153846;
+
 			tilt1.on('*', function (data) {
-				let xx = Math.min(Math.max((((data.x + 1) * 1000)) / thirteenth, 0), 13)
-				let yy = Math.min(Math.max((((data.y + 1) * 1000)) / thirteenth, 0), 13)
-				let note = ((xx + yy) / 2).toFixed(0)
-				// $('div#output').text("note=" + note);
-				s1.setCurrentTone(note);
-				s1.attack();
+				if(onoff.val.value == 0) return;
+				// let xx = Math.min(Math.max((((data.x + 1) * 1000)) / thirteenth, 0), 10);
+				let yy = Math.min(Math.max((((data.y + 1) * 1000)) / thirteenth, 0), 10);
+				// let note = ((xx + yy) / 2).toFixed(0);
+				let note = yy.toFixed(0);
+				$('div#output').text("note=" + note);
+				me.setCurrentTone(note);
+				socket.emit('change', { me: myuser, room: myroom, note: note, instrument: currentInstrument });
 			})
 
 			matrix1.on('*', function (data) {
 				$('div#output').text(JSON.stringify(data));
 			})
-		}
 
-		function initializeAudio() {
-			if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-				var context = Tone.context
-				var buffer = context.createBuffer(1, 1, context.sampleRate)
-				var source = context.createBufferSource()
-				source.buffer = buffer
-				source.connect(context.destination)
-				source.start(0)
+			socket.on('sup', function(data) {
+				console.log('sup: ' + JSON.stringify(data));
+				myuser = data.you;
+				myroom = data.room;
+				//   * Need an ID for current device/user
+				//   * Need a "room" ID for all devices/users
+				// (re)Start pulse - prefer at same time for all users
+				socket.emit('change', { me: myuser, room: myroom, note: 0, instrument: currentInstrument });
+			});
 
-				// resume the audio context
-				if (context.resume) {
-					context.resume()
+			// Handle connect for other users & start their audio
+			socket.on('hi', function(data) {
+				console.log('hi: ' + JSON.stringify(data));
+				if(data.user == myuser) return;
+
+				// add user to list (if not me)
+				// if(!!data.user) return;
+				// create synth for user
+				them[data.user] = { 
+					synth: createSynth(notes, defaultInstrument.synth).connect(defaultInstrument.fx)
+				};
+			});			
+	
+			// Handle disconnect for other users
+			socket.on('bye', function(data) {
+				if(data.user == myuser) return;
+				console.log('bye: ' + JSON.stringify(data));
+
+				// find user 
+				// destroy synth for user
+				if(!them[data.user]) return;
+				if(!them[data.user].synth) return;
+				let s = them[data.user].synth;
+				delete them[data.user];
+				s.release();
+			});
+
+			// socket.emit('change', { me: myuser, room: myroom, note: 0, instrument: currentInstrument });
+
+			// Handle note (tilt) & instrument for other users
+			socket.on('change', function(data) {
+				if(data.me == myuser) return;
+				console.log('change: ' + JSON.stringify(data));
+				// find user who made change
+				let u = them[data.me];
+				if(u) {
+					// set note for user
+					u.note = data.note;
+					u.synth.setCurrentTone(u.note);			
 				}
-			}
+			});	
+			socket.on('change-instrument', function(data) {
+				if(data.me == myuser) return;
+				console.log('change-instrument: ' + JSON.stringify(data));
+				// find user who made change
+				let u = them[data.me];
+				if(u) {
+					u.currentInstrument	= data.currentInstrument;
+					let instrument = instruments[data.instrument.row][data.instrument.col];
+
+					if(u.synth) { u.synth.release()};
+					u.synth = createSynth(notes, instrument.synth).connect(instrument.fx);
+				}
+			});				
+
+			socket.emit('hi', { });
 		}
 
 		function createSynth(notes, definition) {
 			var synth = new Tone.Synth(definition).toMaster();
 
+			synth.latencyHint = 0.5;
+			// synth.Transport.start("+0.1");
+
 			synth.notes = notes,
 				synth.currentTone = synth.notes[0],
 				synth.setCurrentTone = function (t) {
-					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t],
-						synth.triggerAttack(synth.currentTone))
+					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t])
+						// synth.triggerAttack(synth.currentTone))
 				};
 
-			synth.attack = function () {
-				synth.triggerAttack(synth.currentTone),
+			synth.attackRelease = function (time) {
+				if(!time) {
+					time = Tone.now() + 0.1;
+				}
+				synth.triggerAttackRelease(synth.currentTone, time),
+					synth.isAttacking = !1;
+			};				
+
+			synth.attack = function (time) {
+				if(!time) {
+					time = Tone.now() + 0.1;
+				}
+				synth.triggerAttack(synth.currentTone, time),
 					synth.isAttacking = !0
 			};
 
 			synth.release = function () {
-				synth.triggerRelease(),
-					synth.isAttacking = !1
+				if(synth.isAttacking == 0) {
+					synth.triggerRelease(),
+						synth.isAttacking = !1
+				}
 			}
 
 			return synth;
 		}
 
+		// THis is an attempt to prevent scolling the screen.
+		var keys = {37: 1, 38: 1, 39: 1, 40: 1};
 
-		function createMonoSynth(notes, definition) {
-			var synth = new Tone.MonoSynth(definition).toMaster();
-
-			synth.notes = notes,
-				synth.currentTone = synth.notes[0],
-				synth.setCurrentTone = function (t) {
-					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t],
-						synth.triggerAttack(synth.currentTone))
-				};
-
-			synth.attack = function () {
-				synth.triggerAttack(synth.currentTone),
-					synth.isAttacking = !0
-			};
-
-			synth.release = function () {
-				synth.triggerRelease(),
-					synth.isAttacking = !1
-			}
-
-			return synth;
+		function preventDefault(e) {
+			e = e || window.event;
+			if (e.preventDefault)
+				e.preventDefault();
+			e.returnValue = false;  
 		}
 
-		function createMembraneSynth(notes, definition) {
-			var synth = new Tone.MembraneSynth(definition).toMaster();
-
-			synth.notes = notes,
-				synth.currentTone = synth.notes[0],
-				synth.setCurrentTone = function (t) {
-					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t],
-						synth.triggerAttack(synth.currentTone))
-				};
-
-			synth.attack = function () {
-				synth.triggerAttack(synth.currentTone),
-					synth.isAttacking = !0
-			};
-
-			synth.release = function () {
-				synth.triggerRelease(),
-					synth.isAttacking = !1
+		function preventDefaultForScrollKeys(e) {
+			if (keys[e.keyCode]) {
+				preventDefault(e);
+				return false;
 			}
-
-			return synth;
-		}
-		function createPolySynth(notes, definition) {
-			var synth = new Tone.PolySynth(4, Tone.Synth, definition).toMaster();
-
-			synth.notes = notes,
-				synth.currentTone = synth.notes[0],
-				synth.setCurrentTone = function (t) {
-					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t],
-						synth.triggerAttack(synth.currentTone))
-				};
-
-			synth.attack = function () {
-				synth.triggerAttack(synth.currentTone),
-					synth.isAttacking = !0
-			};
-
-			synth.release = function () {
-				synth.triggerRelease(),
-					synth.isAttacking = !1
-			}
-
-			return synth;
 		}
 
-		function createNoiseSynth(notes, definition) {
-			var synth = new Tone.NoiseSynth(definition).toMaster();
-
-			synth.notes = notes,
-				synth.currentTone = synth.notes[0],
-				synth.setCurrentTone = function (t) {
-					synth.isAttacking && synth.notes[t] != synth.currentTone && (synth.currentTone = synth.notes[t],
-						synth.triggerAttack(synth.currentTone))
-				};
-
-			synth.attack = function () {
-				synth.triggerAttack(synth.currentTone),
-					synth.isAttacking = !0
-			};
-
-			synth.release = function () {
-				synth.triggerRelease(),
-					synth.isAttacking = !1
-			}
-
-			return synth;
+		function disableScroll() {
+			if (window.addEventListener) // older FF
+				window.addEventListener('DOMMouseScroll', preventDefault, { passive: false });
+			window.onwheel = preventDefault; // modern standard
+			window.onmousewheel = document.onmousewheel = preventDefault; // older browsers, IE
+			window.ontouchmove  = preventDefault; // mobile
+			document.onkeydown  = preventDefaultForScrollKeys;
 		}
 	</script>
 </body>
