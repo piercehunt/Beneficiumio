@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "start": "node app",
-    "zip": "zip ~/Downloads/benficium.zip -r *.[^.]* -x node_modules -x npm-debug.log -x .git"
+    "zip": "zip ~/Downloads/benficium.zip -r * .[^.]*  -x 'node_modules/*' -x 'npm-debug.log' -x '.git/*'"
   },
   "author": "Pierce Hunt",
   "license": "ISC",
