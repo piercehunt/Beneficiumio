@@ -1,7 +1,7 @@
 # Beneficium
 
 A Web Audio Experiment by Pierce Hunt
-
+ - Utilizing consumer smartphone's internal gyroscopic sensor to create sounds collaboratively with people all over the world.
 
 ## Usage
 
