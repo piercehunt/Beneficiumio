@@ -3,6 +3,8 @@
 A Web Audio Experiment by Pierce Hunt
  - Utilizing consumer smartphone's internal gyroscopic sensor to create sounds collaboratively with people all over the world.
 
+UPDATE 5/17/21 - Needs updating. Working demo coming very soon.
+
 ## Usage
 
 Prerequisites:
